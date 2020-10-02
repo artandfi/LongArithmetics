@@ -23,22 +23,6 @@ namespace LongArithmetics
                 Digits.Add(number[i] - '0');
         }
 
-        public int this[int i]
-        {
-            get => i < Digits.Count ? Digits[i] : 0;
-            set => Digits[i] = value;
-        }
-
-        public override string ToString()
-        {
-            string result = Sign ? "-" : "";
-            for (int i = Digits.Count - 1; i >= 0; i--)
-                result += Digits[i];
-            return result;
-        }
-
-        public static implicit operator LongNumber(int n) => new LongNumber(n.ToString());
-
         public static bool operator ==(LongNumber a, LongNumber b)
         {
             return a.Sign == b.Sign && a.Digits.SequenceEqual(b.Digits);
@@ -127,5 +111,89 @@ namespace LongArithmetics
             else res = a.Sign ? -(-a + b) : a + (-b);
             return res;
         }
+
+        public static LongNumber operator *(LongNumber a, LongNumber b)
+        {
+            if (a == 0 || b == 0) return 0;
+
+            var res = new LongNumber() { Sign = a.Sign != b.Sign };
+            
+            if (a.Digits.Count < b.Digits.Count)
+                Swap(ref a, ref b);
+
+            // multiplication, formin' blocks
+            var blocks = new LongNumber[b.Digits.Count];
+            for (int i = 0; i < blocks.Length; i++)
+            {
+                blocks[i] = new LongNumber();
+                for (int j = 0; j < i; j++)
+                    blocks[i].Digits.Add(0);
+
+                int pCarry = 0;
+                for (int j = 0; j < a.Digits.Count; j++)
+                {
+                    int dProd = a[j] * b[i] + pCarry;
+                    blocks[i].Digits.Add(dProd % BASE);
+                    pCarry = dProd / BASE;
+                }
+                if (pCarry > 0) blocks[i].Digits.Add(pCarry);
+            }
+
+            // addition, addin' blocks
+            int sCarry = 0;
+            for (int i = 0; i < blocks[blocks.Length - 1].Digits.Count; i++)
+            {
+                int sum = sCarry;
+                for (int j = 0; j < blocks.Length; j++)
+                    sum += blocks[j][i];
+                res.Digits.Add(sum % BASE);
+                sCarry = sum / BASE;
+            }
+            if (sCarry > 0)
+            {
+                while (sCarry > 0)
+                {
+                    res.Digits.Add(sCarry % BASE);
+                    sCarry /= BASE;
+                }
+            }
+
+            return res;
+        }
+
+
+
+
+
+
+
+
+        #region Utility methods
+
+        public int this[int i]
+        {
+            get => i < Digits.Count ? Digits[i] : 0;
+            set => Digits[i] = value;
+        }
+
+        public override string ToString()
+        {
+            string result = Sign ? "-" : "";
+            for (int i = Digits.Count - 1; i >= 0; i--)
+                result += Digits[i];
+            return result;
+        }
+
+        public static implicit operator LongNumber(int n) => new LongNumber(n.ToString());
+
+        public static void Swap(ref LongNumber a, ref LongNumber b)
+        {
+            var tmp = a;
+            a = b;
+            b = tmp;
+        }
+
+
+        #endregion
     }
 }
