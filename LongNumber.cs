@@ -23,6 +23,17 @@ namespace LongArithmetics
                 Digits.Add(number[i] - '0');
         }
 
+        public LongNumber(int number)
+        {
+            Sign = number < 0;
+            number = Math.Abs(number);
+            do
+            {
+                Digits.Add(number % BASE);
+                number /= BASE;
+            } while (number > 0);
+        }
+
         public static bool operator ==(LongNumber a, LongNumber b)
         {
             return a.Sign == b.Sign && a.Digits.SequenceEqual(b.Digits);
@@ -149,6 +160,7 @@ namespace LongArithmetics
                 res.Digits.Add(sum % BASE);
                 sCarry = sum / BASE;
             }
+
             if (sCarry > 0)
             {
                 while (sCarry > 0)
@@ -161,12 +173,73 @@ namespace LongArithmetics
             return res;
         }
 
+        public static LongNumber operator /(LongNumber a, LongNumber b)
+        {
+            if (b == 0) throw new Exception();
 
+            var res = new LongNumber() { Sign = a.Sign != b.Sign };
+            var subA = new LongNumber() { Sign = false };
+            var absB = Abs(b);
+            int i = a.Digits.Count - 1;
+            bool firstStep = true;
 
+            while (i >= 0)
+            {
+                int added = 0;
+                do
+                {
+                    subA.Digits.Insert(0, a[i]);
+                    i--;
+                    added++;
 
+                    if (added > 1 && !firstStep) res.Digits.Insert(0, 0);
+                } while (subA < absB && i >= 0);
 
+                if (firstStep) firstStep = false;
 
+                var quot = NaiveDivide(subA, absB);
+                res.Digits.Insert(0, quot);
+                subA -= absB * quot;
 
+                if (subA == 0) subA.Digits.Remove(0);
+            }
+
+            if (a.Sign && b.Sign && subA != 0) res++;
+            if (a.Sign && !b.Sign && subA != 0) res--;
+
+            return res;
+        }
+
+        public static LongNumber operator %(LongNumber a, LongNumber b) => a - b * (a / b);
+
+        public static LongNumber operator ++(LongNumber a) => a + 1;
+
+        public static LongNumber operator --(LongNumber a) => a - 1;
+
+        #region Functions
+        public static LongNumber NaiveDivide(LongNumber a, LongNumber b)
+        {
+            var res = new LongNumber("0");
+
+            while (a >= b)
+            {
+                a -= b;
+                res++;
+            }
+            return res;
+        }
+
+        public static LongNumber Divide(LongNumber a, LongNumber b, out LongNumber remainder)
+        {
+            remainder = a % b;
+            return a / b;
+        }
+
+        public static LongNumber Abs(LongNumber a)
+        {
+            return new LongNumber() { Digits = a.Digits, Sign = false };
+        }
+        #endregion
 
         #region Utility methods
 
@@ -185,6 +258,7 @@ namespace LongArithmetics
         }
 
         public static implicit operator LongNumber(int n) => new LongNumber(n.ToString());
+        public static implicit operator int(LongNumber n) => Int32.Parse(n.ToString());
 
         public static void Swap(ref LongNumber a, ref LongNumber b)
         {
@@ -192,7 +266,6 @@ namespace LongArithmetics
             a = b;
             b = tmp;
         }
-
 
         #endregion
     }
