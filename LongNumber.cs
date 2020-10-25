@@ -115,24 +115,28 @@ namespace LongArithmetics {
 
         public static LongNumber operator /(LongNumber a, LongNumber b) {
             if (b == 0)
-                throw new Exception();
+                throw new DivideByZeroException();
 
             if (a == 0)
                 return 0;
 
             var subA = new LongNumber() { Sign = false };
             var res = ColumnDivide(a, b, ref subA);
+            var modIs0 = subA != 0 && subA.Digits.Count != 0;
 
-            if (a.Sign && b.Sign && subA != 0)
+            if (a.Sign && b.Sign && modIs0)
                 res++;
 
-            if (a.Sign && !b.Sign && subA != 0)
+            if (a.Sign && !b.Sign && modIs0)
                 res--;
 
             return res;
         }
 
-        public static LongNumber operator %(LongNumber a, LongNumber b) => a - b * (a / b);
+        public static LongNumber operator %(LongNumber a, LongNumber b) {
+            var r = a - b * (a / b);
+            return r == b ? new LongNumber(0) : r;
+        }
         #endregion
 
         #region Mathematical functions
@@ -161,6 +165,47 @@ namespace LongArithmetics {
             }
 
             return res;
+        }
+
+        public static LongNumber Gcd(LongNumber a, LongNumber b) {
+            a = Abs(a);
+            b = Abs(b);
+
+            while (b != 0) {
+                b = a % (a = b);
+            }
+            return a;
+        }
+
+        public static (LongNumber K1, LongNumber K2) LinearRepresentation(LongNumber a, LongNumber b) {
+            if (b == 0)
+                return (1, 0);
+            
+            var q = a / b;
+            var r = a - q * b;
+            a = b;
+            b = r;
+            var u = new LongNumber(1);
+            var u1 = new LongNumber(1);
+            var u2 = new LongNumber(0);
+            var v = -q;
+            var v1 = -q;
+            var v2 = new LongNumber(1);
+
+            while (a % b != 0) {
+                q = a / b;
+                r = a - q * b;
+                a = b;
+                b = r;
+                u = -q * u1 + u2;
+                v = -q * v1 + v2;
+                u2 = u1;
+                u1 = u;
+                v2 = v1;
+                v1 = v;
+            }
+
+            return (u, v);
         }
 
         public static LongNumber AddMod(LongNumber a, LongNumber b, LongNumber m) => (a + b) % m;
