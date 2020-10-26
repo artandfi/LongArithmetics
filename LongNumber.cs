@@ -19,7 +19,6 @@ namespace LongArithmetics {
 
         public LongNumber(string number) {
             Sign = number[0] == '-';
-
             for (int i = number.Length - 1; i > number.IndexOf('-'); i--)
                 Digits.Add(number[i] - '0');
         }
@@ -55,7 +54,7 @@ namespace LongArithmetics {
         }
 
         public static bool operator <=(LongNumber a, LongNumber b) => a == b || a < b;
-        
+
         public static bool operator >(LongNumber a, LongNumber b) => !(a <= b);
 
         public static bool operator >=(LongNumber a, LongNumber b) => !(a < b);
@@ -114,8 +113,10 @@ namespace LongArithmetics {
         }
 
         public static LongNumber operator /(LongNumber a, LongNumber b) {
-            if (b == 0)
-                throw new DivideByZeroException();
+            if (b == 0) {
+                Console.WriteLine("Cannot divide by zero");
+                return null;
+            }
 
             if (a == 0)
                 return 0;
@@ -134,6 +135,11 @@ namespace LongArithmetics {
         }
 
         public static LongNumber operator %(LongNumber a, LongNumber b) {
+            if (b == 0) {
+                Console.WriteLine("Cannot divide by zero");
+                return null;
+            }
+
             var r = a - b * (a / b);
             return r == b ? new LongNumber(0) : r;
         }
@@ -151,9 +157,14 @@ namespace LongArithmetics {
         }
 
         public static LongNumber Pow(LongNumber a, LongNumber n) {
-            if (n < 0) throw new Exception();
-            if (n == 0) return 1;
-            if (n == 1 || a == 0) return a;
+            if (n < 0) {
+                Console.WriteLine("Only non-negative integer power is applicable");
+                return null;
+            }
+            if (n == 0)
+                return 1;
+            if (n == 1 || a == 0)
+                return a;
 
             var res = new LongNumber(1);
 
@@ -178,11 +189,20 @@ namespace LongArithmetics {
         }
 
         public static (LongNumber K1, LongNumber K2) LinearRepresentation(LongNumber a, LongNumber b) {
+            if (a == 0)
+                return (0, 1);
             if (b == 0)
                 return (1, 0);
-            
+
+            a = Abs(a);
+            b = Abs(b);
+
             var q = a / b;
             var r = a - q * b;
+
+            if (r == 0)
+                return (1, 1 - q);
+
             a = b;
             b = r;
             var u = new LongNumber(1);
@@ -206,6 +226,51 @@ namespace LongArithmetics {
             }
 
             return (u, v);
+        }
+
+        public static (LongNumber r1, LongNumber r2) SolveCongruence(LongNumber a, LongNumber b, LongNumber m) {
+            if (m == 0) {
+                Console.WriteLine("Modulo can't be equal to 0");
+                return (null, null);
+            }
+            
+            if (b == 0) {
+                if (a == 0)
+                    return (0, 1);
+                return (0, m);
+            }
+            if (a < 0 || a >= m)
+                a %= m;
+            if (b < 0 || b >= m)
+                b %= m;
+
+
+            var d = Gcd(a, m);
+            if (b % d != 0)
+                return (null, null);
+
+            var (k1, k2) = LinearRepresentation(a, m);
+            return ((k1 * b / d) % m, m / d);
+        }
+
+        public static (LongNumber r1, LongNumber r2) SolveCongruenceSystem(LongNumber[] a, LongNumber[] b, LongNumber[] m) {
+            if (a.Length != b.Length || a.Length != m.Length || b.Length != m.Length) {
+                Console.WriteLine("Cannot solve system: parameters' amounts don't match");
+                return (null, null);
+            }
+
+            var sols = new (LongNumber r1, LongNumber r2)[a.Length];
+            for (int i = 0; i < sols.Length; i++) {
+                sols[i] = SolveCongruence(a[i], b[i], m[i]);
+
+                if (sols[i] == (null, null)) {
+                    Console.WriteLine("System has no solutions");
+                    return (null, null);
+                }
+            }
+
+			// TODO
+            return (null, null);
         }
 
         public static LongNumber AddMod(LongNumber a, LongNumber b, LongNumber m) => (a + b) % m;
