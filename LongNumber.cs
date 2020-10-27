@@ -178,6 +178,19 @@ namespace LongArithmetics {
             return res;
         }
 
+        public static LongNumber Sqrt(LongNumber a) {
+            if (a.Sign) {
+                Console.WriteLine("Only non-negative integer is applicable");
+                return null;
+            }
+
+            if (a < 4)
+                return a == 0 ? 0 : 1;
+
+            var k = 2 * Sqrt((a - a % 4) / 4);
+            return a < Pow((k + 1), 2) ? k : k + 1; 
+        }
+
         public static LongNumber Gcd(LongNumber a, LongNumber b) {
             a = Abs(a);
             b = Abs(b);
@@ -188,14 +201,11 @@ namespace LongArithmetics {
             return a;
         }
 
-        public static (LongNumber K1, LongNumber K2) LinearRepresentation(LongNumber a, LongNumber b) {
+        public static (LongNumber K1, LongNumber K2) GcdLinearRepresentation(LongNumber a, LongNumber b) {
             if (a == 0)
                 return (0, 1);
             if (b == 0)
                 return (1, 0);
-
-            a = Abs(a);
-            b = Abs(b);
 
             var q = a / b;
             var r = a - q * b;
@@ -263,7 +273,7 @@ namespace LongArithmetics {
             if (b % d != 0)
                 return (null, null);
 
-            var (k1, k2) = LinearRepresentation(a, m);
+            var (k1, k2) = GcdLinearRepresentation(a, m);
             var f = b / d;
             return (k1 * f, m / d);
         }
