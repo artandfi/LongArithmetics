@@ -228,12 +228,26 @@ namespace LongArithmetics {
             return (u, v);
         }
 
+        public static LongNumber AddMod(LongNumber a, LongNumber b, LongNumber m) => (a + b) % m;
+
+        public static LongNumber SubMod(LongNumber a, LongNumber b, LongNumber m) => (a - b) % m;
+
+        public static LongNumber MulMod(LongNumber a, LongNumber b, LongNumber m) => (a * b) % m;
+
+        public static LongNumber DivMod(LongNumber a, LongNumber b, LongNumber m) => (a / b) % m;
+
+        public static LongNumber ModMod(LongNumber a, LongNumber b, LongNumber m) => (a % b) % m;
+
+        public static LongNumber PowMod(LongNumber a, LongNumber b, LongNumber m) => Pow(a, b) % m;
+        #endregion
+
+        #region Congruences
+
         public static (LongNumber r1, LongNumber r2) SolveCongruence(LongNumber a, LongNumber b, LongNumber m) {
             if (m == 0) {
                 Console.WriteLine("Modulo can't be equal to 0");
                 return (null, null);
             }
-            
             if (b == 0) {
                 if (a == 0)
                     return (0, 1);
@@ -250,8 +264,11 @@ namespace LongArithmetics {
                 return (null, null);
 
             var (k1, k2) = LinearRepresentation(a, m);
-            return ((k1 * b / d) % m, m / d);
+            var f = b / d;
+            return (k1 * f, m / d);
         }
+
+        public static void NormalizeCongruenceSol((LongNumber r1, LongNumber r2) sol) => sol.r1 %= sol.r2;
 
         public static (LongNumber r1, LongNumber r2) SolveCongruenceSystem(LongNumber[] a, LongNumber[] b, LongNumber[] m) {
             if (a.Length != b.Length || a.Length != m.Length || b.Length != m.Length) {
@@ -263,27 +280,55 @@ namespace LongArithmetics {
             for (int i = 0; i < sols.Length; i++) {
                 sols[i] = SolveCongruence(a[i], b[i], m[i]);
 
-                if (sols[i] == (null, null)) {
+                if (sols[i].r1 is null && sols[i].r2 is null) {
                     Console.WriteLine("System has no solutions");
                     return (null, null);
                 }
             }
 
-			// TODO
-            return (null, null);
+            var prevSol = sols[0];
+            NormalizeCongruenceSol(prevSol);
+            for (int i = 1; i < sols.Length; i++) {
+                var r1 = prevSol.r1;
+                var r2 = prevSol.r2; // prev: x = r1 (mod r2)
+                var bi = sols[i].r1;
+                var mi = sols[i].r2; // current: x = bi (mod mi)
+                var (k1, k2) = SolveCongruence(r2 % mi, (bi - r1) % mi, mi);
+
+                if (k1 is null && k2 is null) {
+                    Console.WriteLine("System has no solutions");
+                    return (null, null);
+                }
+
+                NormalizeCongruenceSol((k1, k2));
+                var mr = r2 * k2;
+                prevSol = ((r1 + r2 * k1) % mr, mr);
+            }
+
+            return prevSol;
         }
 
-        public static LongNumber AddMod(LongNumber a, LongNumber b, LongNumber m) => (a + b) % m;
+        public static void OutputCongruenceSols(LongNumber r1, LongNumber r2) {
+            Console.WriteLine("Solution is x = " + r1 + " + " + r2 + "k");
+            Console.WriteLine("Alternate form: x = " + r1 + " (mod " + r2 + ")");
+        }
 
-        public static LongNumber SubMod(LongNumber a, LongNumber b, LongNumber m) => (a - b) % m;
+        public static void OutputCongruenceSols(LongNumber r1, LongNumber r2, LongNumber m) {
+            OutputCongruenceSols(r1, r2);
+            Console.Write("Solutions in Z" + m + ": x = ");
+            
+            LongNumber x;
+            var sols = "";
+            var d = m / r2;
 
-        public static LongNumber MulMod(LongNumber a, LongNumber b, LongNumber m) => (a * b) % m;
+            for (var k = new LongNumber(0); k < d; k++) {
+                x = (r1 + r2 * k) % m;
+                sols += x + ", ";
+            }
+            sols = sols.Substring(0, sols.Length - 2);
+            Console.Write(sols + "\n");
+        }
 
-        public static LongNumber DivMod(LongNumber a, LongNumber b, LongNumber m) => (a / b) % m;
-
-        public static LongNumber ModMod(LongNumber a, LongNumber b, LongNumber m) => (a % b) % m;
-
-        public static LongNumber PowMod(LongNumber a, LongNumber b, LongNumber m) => Pow(a, b) % m;
         #endregion
 
         #region Utility methods
