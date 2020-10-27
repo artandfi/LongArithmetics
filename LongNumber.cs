@@ -10,8 +10,8 @@ namespace LongArithmetics {
     public class LongNumber {
         #region Fields
         const int BASE = 10;
-        bool Sign { get; set; }
         List<int> Digits { get; set; } = new List<int>();   // Reverse order!
+        bool Sign { get; set; }
         #endregion
 
         #region Constructors
@@ -113,13 +113,14 @@ namespace LongArithmetics {
         }
 
         public static LongNumber operator /(LongNumber a, LongNumber b) {
-            if (b == 0) {
-                Console.WriteLine("Cannot divide by zero");
+            if (b == 0)
                 return null;
-            }
-
             if (a == 0)
                 return 0;
+            if (b == 1)
+                return a;
+            if (b == -1)
+                return -a;
 
             var subA = new LongNumber() { Sign = false };
             var res = ColumnDivide(a, b, ref subA);
@@ -127,18 +128,17 @@ namespace LongArithmetics {
 
             if (a.Sign && b.Sign && modIs0)
                 res++;
-
             if (a.Sign && !b.Sign && modIs0)
                 res--;
+            if (res[0] == 0)
+                res.Sign = false;
 
             return res;
         }
 
         public static LongNumber operator %(LongNumber a, LongNumber b) {
-            if (b == 0) {
-                Console.WriteLine("Cannot divide by zero");
+            if (b == 0)
                 return null;
-            }
 
             var r = a - b * (a / b);
             return r == b ? new LongNumber(0) : r;
@@ -147,20 +147,13 @@ namespace LongArithmetics {
 
         #region Mathematical functions
 
-        public static LongNumber Divide(LongNumber a, LongNumber b, out LongNumber remainder) {
-            remainder = a % b;
-            return a / b;
-        }
-
         public static LongNumber Abs(LongNumber a) {
             return new LongNumber() { Digits = a.Digits, Sign = false };
         }
 
         public static LongNumber Pow(LongNumber a, LongNumber n) {
-            if (n < 0) {
-                Console.WriteLine("Only non-negative integer power is applicable");
-                return null;
-            }
+            if (n < 0)
+                return a == 0 ? null : new LongNumber(0);
             if (n == 0)
                 return 1;
             if (n == 1 || a == 0)
@@ -179,11 +172,8 @@ namespace LongArithmetics {
         }
 
         public static LongNumber Sqrt(LongNumber a) {
-            if (a.Sign) {
-                Console.WriteLine("Only non-negative integer is applicable");
+            if (a.Sign)
                 return null;
-            }
-
             if (a < 4)
                 return a == 0 ? 0 : 1;
 
@@ -238,24 +228,50 @@ namespace LongArithmetics {
             return (u, v);
         }
 
+        #region Functions by modulo
         public static LongNumber AddMod(LongNumber a, LongNumber b, LongNumber m) => (a + b) % m;
 
         public static LongNumber SubMod(LongNumber a, LongNumber b, LongNumber m) => (a - b) % m;
 
         public static LongNumber MulMod(LongNumber a, LongNumber b, LongNumber m) => (a * b) % m;
 
-        public static LongNumber DivMod(LongNumber a, LongNumber b, LongNumber m) => (a / b) % m;
+        public static LongNumber DivMod(LongNumber a, LongNumber b, LongNumber m) {
+            var d = a / b;
+            return d is null ? null : (a / b) % m;
+        }
 
-        public static LongNumber ModMod(LongNumber a, LongNumber b, LongNumber m) => (a % b) % m;
+        public static LongNumber ModMod(LongNumber a, LongNumber b, LongNumber m) {
+            var d = a % b;
+            return d is null ? null : (a % b) % m;
+        }
 
-        public static LongNumber PowMod(LongNumber a, LongNumber b, LongNumber m) => Pow(a, b) % m;
+        public static LongNumber PowMod(LongNumber a, LongNumber b, LongNumber m) {
+            if (b < 0)
+                return null;
+            if (b == 0)
+                return 1;
+            if (b == 1 || a == 0)
+                return a % m;
+
+            var res = new LongNumber(1);
+
+            while (b > 0) {
+                if (b % 2 == 1)
+                    res = (res * a) % m;
+                a = (a * a) % m;
+                b /= 2;
+            }
+
+            return res;
+        }
+        #endregion
+
         #endregion
 
         #region Congruences
 
         public static (LongNumber r1, LongNumber r2) SolveCongruence(LongNumber a, LongNumber b, LongNumber m) {
             if (m == 0) {
-                Console.WriteLine("Modulo can't be equal to 0");
                 return (null, null);
             }
             if (b == 0) {
@@ -278,11 +294,10 @@ namespace LongArithmetics {
             return (k1 * f, m / d);
         }
 
-        public static void NormalizeCongruenceSol((LongNumber r1, LongNumber r2) sol) => sol.r1 %= sol.r2;
+        public static void NormalizeCongruenceSol(ref (LongNumber r1, LongNumber r2) sol) => sol.r1 %= sol.r2;
 
         public static (LongNumber r1, LongNumber r2) SolveCongruenceSystem(LongNumber[] a, LongNumber[] b, LongNumber[] m) {
             if (a.Length != b.Length || a.Length != m.Length || b.Length != m.Length) {
-                Console.WriteLine("Cannot solve system: parameters' amounts don't match");
                 return (null, null);
             }
 
@@ -291,40 +306,38 @@ namespace LongArithmetics {
                 sols[i] = SolveCongruence(a[i], b[i], m[i]);
 
                 if (sols[i].r1 is null && sols[i].r2 is null) {
-                    Console.WriteLine("System has no solutions");
                     return (null, null);
                 }
             }
 
             var prevSol = sols[0];
-            NormalizeCongruenceSol(prevSol);
+            NormalizeCongruenceSol(ref prevSol);
             for (int i = 1; i < sols.Length; i++) {
                 var r1 = prevSol.r1;
                 var r2 = prevSol.r2; // prev: x = r1 (mod r2)
                 var bi = sols[i].r1;
                 var mi = sols[i].r2; // current: x = bi (mod mi)
-                var (k1, k2) = SolveCongruence(r2 % mi, (bi - r1) % mi, mi);
+                var sol = SolveCongruence(r2 % mi, (bi - r1) % mi, mi);
 
-                if (k1 is null && k2 is null) {
-                    Console.WriteLine("System has no solutions");
+                if (sol.r1 is null) {
                     return (null, null);
                 }
 
-                NormalizeCongruenceSol((k1, k2));
-                var mr = r2 * k2;
-                prevSol = ((r1 + r2 * k1) % mr, mr);
+                NormalizeCongruenceSol(ref sol);
+                var mr = r2 * sol.r2;
+                prevSol = ((r1 + r2 * sol.r1) % mr, mr);
             }
 
             return prevSol;
         }
 
-        public static void OutputCongruenceSols(LongNumber r1, LongNumber r2) {
+        public static void OutputCongruenceSol(LongNumber r1, LongNumber r2) {
             Console.WriteLine("Solution is x = " + r1 + " + " + r2 + "k");
             Console.WriteLine("Alternate form: x = " + r1 + " (mod " + r2 + ")");
         }
 
-        public static void OutputCongruenceSols(LongNumber r1, LongNumber r2, LongNumber m) {
-            OutputCongruenceSols(r1, r2);
+        public static void OutputCongruenceSol(LongNumber r1, LongNumber r2, LongNumber m) {
+            OutputCongruenceSol(r1, r2);
             Console.Write("Solutions in Z" + m + ": x = ");
             
             LongNumber x;
