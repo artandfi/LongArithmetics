@@ -10,8 +10,8 @@ namespace LongArithmetics {
     public class LongNumber {
         #region Fields
         const int BASE = 10;
-        List<int> Digits { get; set; } = new List<int>();   // Reverse order!
-        bool Sign { get; set; }
+        public List<int> Digits { get; set; } = new List<int>();   // Reverse order!
+        public bool Sign { get; set; }
         #endregion
 
         #region Constructors
@@ -374,13 +374,36 @@ namespace LongArithmetics {
             b = tmp;
         }
 
-        private void ClearZeros() {
+        public void ClearZeros() {
             int c = Digits.Count - 1;
             while (c > 0 && Digits[c] == 0)
                 Digits.RemoveAt(c--);
         }
 
-        public static implicit operator LongNumber(int n) => new LongNumber(n.ToString());
+        public static LongNumber Rand(LongNumber a, LongNumber b) {
+            var rnd = new Random();
+            var res = new LongNumber();
+            var len = rnd.Next(a.Digits.Count, b.Digits.Count + 1);
+
+            if (len == 1)
+                res.Digits.Add(rnd.Next(0, BASE));
+            else
+                res.Digits.Add(rnd.Next(1, BASE));
+
+            for (int i = 1; i < a.Digits.Count; i++) {
+                res.Digits.Add(rnd.Next(a[i], BASE));
+            }
+
+            var eq = len == b.Digits.Count;
+            for (int i = 0; i < len - a.Digits.Count; i++) {
+                var d = eq ? rnd.Next(0, b[a.Digits.Count + i]) : rnd.Next(0, BASE);
+                res.Digits.Add(d);
+            }
+
+            return res;
+        }
+
+        public static implicit operator LongNumber(int n) => new LongNumber(n);
 
         public static implicit operator int(LongNumber n) => Int32.Parse(n.ToString());
         #endregion
