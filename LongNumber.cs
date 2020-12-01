@@ -509,7 +509,7 @@ namespace LongArithmetics {
                     i--;
                     added++;
 
-                    a.ClearZeros();
+                    subA.ClearZeros();
 
                     if (added > 1 && !firstStep)
                         res.Digits.Insert(0, 0);
