@@ -10,8 +10,14 @@ namespace LongArithmetics {
     public class LongNumber {
         #region Fields
         const int BASE = 10;
+        private bool _sign;
         public List<int> Digits { get; set; } = new List<int>();   // Reverse order!
-        public bool Sign { get; set; }
+        public bool Sign { 
+            get => _sign;
+            set {
+                _sign = Digits.Count == 1 && Digits[0] == 0 ? false : value;
+            }
+        }
         #endregion
 
         #region Constructors
@@ -224,6 +230,11 @@ namespace LongArithmetics {
                 v2 = v1;
                 v1 = v;
             }
+
+            if (u.Sign && u == 0)
+                u.Sign = false;
+            if (v.Sign && v == 0)
+                v.Sign = false;
 
             return (u, v);
         }
