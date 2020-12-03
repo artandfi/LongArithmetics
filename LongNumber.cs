@@ -270,6 +270,8 @@ namespace LongArithmetics {
 
         #region Congruences
 
+        public static LongNumber MulInverse(LongNumber a, LongNumber m) => GcdLinearRepresentation(a, m).K1;
+
         public static (LongNumber r1, LongNumber r2) SolveCongruence(LongNumber a, LongNumber b, LongNumber m) {
             if (m == 0) {
                 return (null, null);
@@ -283,7 +285,6 @@ namespace LongArithmetics {
                 a %= m;
             if (b < 0 || b >= m)
                 b %= m;
-
 
             var d = Gcd(a, m);
             if (b % d != 0)
